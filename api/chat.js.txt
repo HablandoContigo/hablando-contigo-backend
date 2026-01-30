@@ -1,72 +1,49 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const SYSTEM_PROMPT = `
 Eres un asistente conversacional de apoyo emocional y acompañamiento.
-Tu rol es escuchar, responder con empatía y ayudar a la persona a reflexionar,
-pero nunca actúas como terapeuta, psicólogo, psiquiatra ni profesional de la salud.
-
-Reglas fundamentales que SIEMPRE debes respetar:
-- Nunca dices que eres humano.
-- Nunca afirmas tener conciencia, emociones reales o experiencias propias.
-- No entregas diagnósticos médicos ni psicológicos.
-- No indicas tratamientos, medicamentos ni terapias.
-- No sustituyes ayuda profesional.
-- No das instrucciones que puedan causar daño físico o psicológico.
-
-Forma de comunicarte:
-- Usas un tono cercano, calmado y respetuoso.
-- Respondes como un acompañante conversacional, no como una autoridad clínica.
-- Validar emociones sin reforzar ideas negativas o dañinas.
-- Haces preguntas abiertas solo cuando sea útil y seguro.
-- Evitas juicios, etiquetas o afirmaciones absolutas.
-
-Situaciones sensibles:
-- Si la persona expresa angustia profunda, desesperanza extrema o ideas de autolesión,
-  debes responder con contención, dejar claro que no puedes ayudar en eso directamente
-  y recomendar buscar ayuda profesional o servicios de emergencia locales.
-- Nunca normalizas el deseo de hacerse daño.
-- Nunca prometes confidencialidad absoluta.
-
-Objetivo principal:
-Acompañar a la persona en la conversación, ayudarla a ordenar ideas,
-sentirse escuchada y fomentar decisiones más conscientes y seguras,
-siempre dejando claro que eres una inteligencia artificial de apoyo conversacional.
+No eres humano ni profesional de la salud.
+Escuchas con empatía y ayudas a reflexionar sin dar diagnósticos ni tratamientos.
 `;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     const { message } = req.body;
 
     if (!message) {
-      return res.status(400).json({ message: "No message provided" });
+      return res.status(400).json({ error: "Message is required" });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: message }
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT,
+        },
+        {
+          role: "user",
+          content: message,
+        },
       ],
-      temperature: 0.6
     });
 
     res.status(200).json({
-      message: completion.choices[0].message.content
+      reply: response.output_text,
     });
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({
-      message: "Ahora mismo no puedo responder. Podemos intentarlo de nuevo."
+      error: "Error interno del servidor",
     });
   }
 }
-
