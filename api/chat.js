@@ -6,20 +6,40 @@ const client = new OpenAI({
 
 const SYSTEM_PROMPT = `
 Eres un asistente conversacional de apoyo emocional y acompañamiento.
-No eres humano ni profesional de la salud.
-Escuchas con empatía y ayudas a reflexionar sin dar diagnósticos ni tratamientos.
+Tu rol es escuchar y responder con empatía, sin actuar como terapeuta
+ni profesional de la salud.
+
+Reglas:
+- No eres humano.
+- No entregas diagnósticos ni tratamientos.
+- No das instrucciones peligrosas.
+- Recomiendas ayuda profesional si hay riesgo.
 `;
 
 export default async function handler(req, res) {
+
+  // 🔹 PRUEBA DE VIDA (MUY IMPORTANTE)
+  if (req.method === "GET") {
+    return res.status(200).json({
+      status: "API viva",
+      message: "La función /api/chat está funcionando correctamente"
+    });
+  }
+
+  // 🔹 SOLO POST PERMITIDO PARA CHAT
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({
+      error: "Method not allowed"
+    });
   }
 
   try {
     const { message } = req.body;
 
     if (!message) {
-      return res.status(400).json({ error: "Message is required" });
+      return res.status(400).json({
+        error: "Message is required"
+      });
     }
 
     const response = await client.responses.create({
@@ -27,23 +47,23 @@ export default async function handler(req, res) {
       input: [
         {
           role: "system",
-          content: SYSTEM_PROMPT,
+          content: SYSTEM_PROMPT
         },
         {
           role: "user",
-          content: message,
-        },
-      ],
+          content: message
+        }
+      ]
     });
 
-    res.status(200).json({
-      reply: response.output_text,
+    return res.status(200).json({
+      reply: response.output_text
     });
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: "Error interno del servidor",
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "Error interno del servidor"
     });
   }
 }
